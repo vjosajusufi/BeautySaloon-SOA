@@ -1,59 +1,46 @@
+using AutoMapper;
 using BeautySaloon_API.DTOs;
-using BeautySaloon_API.Models;
 using BeautySaloon_API.Repositories.Interfaces;
 using BeautySaloon_API.Services.Interfaces;
 
 namespace BeautySaloon_API.Services;
 
-public class UserService(IUserRepository repository) : IUserService
+public class UserService(IUserRepository repository, IMapper mapper) : IUserService
 {
-    public async Task<IEnumerable<UserDto>> GetAll()
+    public async Task<IEnumerable<UserDto>> GetAll(CancellationToken ct = default)
     {
-        var users = await repository.GetAll();
-        return users.Select(ToDto);
+        var users = await repository.GetAll(ct);
+        return mapper.Map<IEnumerable<UserDto>>(users);
     }
 
-    public async Task<UserDto?> GetById(int id)
+    public async Task<UserDto?> GetById(int id, CancellationToken ct = default)
     {
-        var user = await repository.GetById(id);
-        return user is null ? null : ToDto(user);
+        var user = await repository.GetById(id, ct);
+        return user is null ? null : mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto?> GetByEmail(string email)
+    public async Task<UserDto?> GetByEmail(string email, CancellationToken ct = default)
     {
-        var user = await repository.GetByEmail(email);
-        return user is null ? null : ToDto(user);
+        var user = await repository.GetByEmail(email, ct);
+        return user is null ? null : mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto?> Update(int id, UpdateUserDto dto)
+    public async Task<UserDto?> Update(int id, UpdateUserDto dto, CancellationToken ct = default)
     {
-        var existing = await repository.GetById(id);
+        var existing = await repository.GetById(id, ct);
         if (existing is null) return null;
 
         if (!string.Equals(existing.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
         {
-            var emailTaken = await repository.GetByEmail(dto.Email);
+            var emailTaken = await repository.GetByEmail(dto.Email, ct);
             if (emailTaken is not null)
                 throw new InvalidOperationException("Email is already in use.");
         }
 
-        existing.FirstName = dto.FirstName;
-        existing.LastName = dto.LastName;
-        existing.Email = dto.Email;
-        existing.Role = dto.Role;
-
-        return ToDto(await repository.Update(existing));
+        mapper.Map(dto, existing);
+        return mapper.Map<UserDto>(await repository.Update(existing, ct));
     }
 
-    public async Task<bool> Delete(int id) =>
-        await repository.Delete(id);
-
-    private static UserDto ToDto(User u) => new()
-    {
-        Id = u.Id,
-        FirstName = u.FirstName,
-        LastName = u.LastName,
-        Email = u.Email,
-        Role = u.Role
-    };
+    public async Task<bool> Delete(int id, CancellationToken ct = default) =>
+        await repository.Delete(id, ct);
 }
