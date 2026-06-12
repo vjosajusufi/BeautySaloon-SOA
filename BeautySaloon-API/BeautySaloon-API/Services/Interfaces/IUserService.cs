@@ -4,9 +4,9 @@ namespace BeautySaloon_API.Services.Interfaces;
 
 public interface IUserService
 {
-    Task<IEnumerable<UserDto>> GetAll();
-    Task<UserDto?> GetById(int id);
-    Task<UserDto?> GetByEmail(string email);
-    Task<UserDto?> Update(int id, UpdateUserDto dto);
-    Task<bool> Delete(int id);
+    Task<IEnumerable<UserDto>> GetAll(CancellationToken ct = default);
+    Task<UserDto?> GetById(int id, CancellationToken ct = default);
+    Task<UserDto?> GetByEmail(string email, CancellationToken ct = default);
+    Task<UserDto?> Update(int id, UpdateUserDto dto, CancellationToken ct = default);
+    Task<bool> Delete(int id, CancellationToken ct = default);
 }

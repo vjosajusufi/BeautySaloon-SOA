@@ -12,9 +12,9 @@ namespace BeautySaloon_API.Services;
 
 public class AuthService(AppDbContext context, IConfiguration configuration) : IAuthService
 {
-    public async Task<string> Register(RegisterDto dto)
+    public async Task<string> Register(RegisterDto dto, CancellationToken ct = default)
     {
-        if (await context.Users.AnyAsync(u => u.Email == dto.Email))
+        if (await context.Users.AnyAsync(u => u.Email == dto.Email, ct))
             throw new InvalidOperationException("Email is already registered.");
 
         var user = new User
@@ -27,14 +27,14 @@ public class AuthService(AppDbContext context, IConfiguration configuration) : I
         };
 
         context.Users.Add(user);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
 
         return GenerateToken(user);
     }
 
-    public async Task<string> Login(LoginDto dto)
+    public async Task<string> Login(LoginDto dto, CancellationToken ct = default)
     {
-        var user = await context.Users.SingleOrDefaultAsync(u => u.Email == dto.Email)
+        var user = await context.Users.SingleOrDefaultAsync(u => u.Email == dto.Email, ct)
             ?? throw new UnauthorizedAccessException("Invalid email or password.");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))

@@ -1,66 +1,69 @@
+using AutoMapper;
 using BeautySaloon_API.DTOs;
 using BeautySaloon_API.Models;
 using BeautySaloon_API.Repositories.Interfaces;
 using BeautySaloon_API.Services.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BeautySaloon_API.Services;
 
-public class WorkingHoursService(IWorkingHoursRepository repository) : IWorkingHoursService
+public class WorkingHoursService(
+    IWorkingHoursRepository repository,
+    IMemoryCache cache,
+    IMapper mapper) : IWorkingHoursService
 {
-    public async Task<IEnumerable<WorkingHoursDto>> GetAll()
+    private const string CacheKey = "workinghours:all:v1";
+
+    private static readonly MemoryCacheEntryOptions CacheOptions = new()
     {
-        var all = await repository.GetAll();
-        return all.Select(ToDto);
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60),
+        SlidingExpiration = TimeSpan.FromSeconds(15)
+    };
+
+    public async Task<IEnumerable<WorkingHoursDto>> GetAll(CancellationToken ct = default)
+    {
+        if (cache.TryGetValue(CacheKey, out IEnumerable<WorkingHoursDto>? cached) && cached is not null)
+            return cached;
+
+        var all = await repository.GetAll(ct);
+        var result = mapper.Map<List<WorkingHoursDto>>(all);
+
+        cache.Set(CacheKey, result, CacheOptions);
+        return result;
     }
 
-    public async Task<WorkingHoursDto?> GetById(int id)
+    public async Task<WorkingHoursDto?> GetById(int id, CancellationToken ct = default)
     {
-        var wh = await repository.GetById(id);
-        return wh is null ? null : ToDto(wh);
+        var wh = await repository.GetById(id, ct);
+        return wh is null ? null : mapper.Map<WorkingHoursDto>(wh);
     }
 
-    public async Task<WorkingHoursDto?> GetByDayOfWeek(DayOfWeek dayOfWeek)
+    public async Task<WorkingHoursDto?> GetByDayOfWeek(DayOfWeek dayOfWeek, CancellationToken ct = default)
     {
-        var wh = await repository.GetByDayOfWeek(dayOfWeek);
-        return wh is null ? null : ToDto(wh);
+        var wh = await repository.GetByDayOfWeek(dayOfWeek, ct);
+        return wh is null ? null : mapper.Map<WorkingHoursDto>(wh);
     }
 
-    public async Task<WorkingHoursDto> Create(CreateWorkingHoursDto dto)
+    public async Task<WorkingHoursDto> Create(CreateWorkingHoursDto dto, CancellationToken ct = default)
     {
-        var existing = await repository.GetByDayOfWeek(dto.DayOfWeek);
+        var existing = await repository.GetByDayOfWeek(dto.DayOfWeek, ct);
         if (existing is not null)
             throw new InvalidOperationException($"Working hours for {dto.DayOfWeek} already exist.");
 
-        var wh = new WorkingHours
-        {
-            DayOfWeek = dto.DayOfWeek,
-            OpenTime = dto.OpenTime,
-            CloseTime = dto.CloseTime,
-            IsOpen = dto.IsOpen
-        };
-
-        return ToDto(await repository.Create(wh));
+        var wh = mapper.Map<WorkingHours>(dto);
+        var created = mapper.Map<WorkingHoursDto>(await repository.Create(wh, ct));
+        cache.Remove(CacheKey);
+        return created;
     }
 
-    public async Task<WorkingHoursDto?> Update(int id, CreateWorkingHoursDto dto)
+    public async Task<WorkingHoursDto?> Update(int id, CreateWorkingHoursDto dto, CancellationToken ct = default)
     {
-        var existing = await repository.GetById(id);
+        var existing = await repository.GetById(id, ct);
         if (existing is null) return null;
 
-        existing.DayOfWeek = dto.DayOfWeek;
-        existing.OpenTime = dto.OpenTime;
-        existing.CloseTime = dto.CloseTime;
-        existing.IsOpen = dto.IsOpen;
-
-        return ToDto(await repository.Update(existing));
+        mapper.Map(dto, existing);
+        var updated = mapper.Map<WorkingHoursDto>(await repository.Update(existing, ct));
+        cache.Remove(CacheKey);
+        return updated;
     }
-
-    private static WorkingHoursDto ToDto(WorkingHours w) => new()
-    {
-        Id = w.Id,
-        DayOfWeek = w.DayOfWeek,
-        OpenTime = w.OpenTime,
-        CloseTime = w.CloseTime,
-        IsOpen = w.IsOpen
-    };
 }
