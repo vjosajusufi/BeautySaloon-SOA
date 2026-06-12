@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using BeautySaloon_API.Data;
 using BeautySaloon_API.Repositories;
 using BeautySaloon_API.Repositories.Interfaces;
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // JWT Authentication
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -67,8 +69,19 @@ builder.Services.AddScoped<IWorkingHoursService, WorkingHoursService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(Program));
+
+// Memory cache
+builder.Services.AddMemoryCache();
+
+// Network-level caching
+builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
+builder.Services.AddOutputCache();
+
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 // Swagger with Bearer token support
 builder.Services.AddSwaggerGen(options =>
@@ -103,16 +116,20 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+await DatabaseSeeder.SeedAsync(app.Services);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 app.MapControllers();
 
 app.Run();
