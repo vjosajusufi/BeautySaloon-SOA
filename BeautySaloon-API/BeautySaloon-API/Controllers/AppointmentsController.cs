@@ -13,36 +13,36 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
 {
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
-        var appointments = await appointmentService.GetAll();
+        var appointments = await appointmentService.GetAll(ct);
         return Ok(appointments);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
     {
-        var appointment = await appointmentService.GetById(id);
+        var appointment = await appointmentService.GetById(id, ct);
         return appointment is null ? NotFound() : Ok(appointment);
     }
 
     [HttpGet("my")]
-    public async Task<IActionResult> GetMy()
+    public async Task<IActionResult> GetMy(CancellationToken ct = default)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
             return Unauthorized();
 
-        var appointments = await appointmentService.GetByUserId(userId);
+        var appointments = await appointmentService.GetByUserId(userId, ct);
         return Ok(appointments);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(CreateAppointmentDto dto)
+    public async Task<IActionResult> Create(CreateAppointmentDto dto, CancellationToken ct = default)
     {
         try
         {
-            var created = await appointmentService.Create(dto);
+            var created = await appointmentService.Create(dto, ct);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (KeyNotFoundException ex)
@@ -57,11 +57,11 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Update(int id, CreateAppointmentDto dto)
+    public async Task<IActionResult> Update(int id, CreateAppointmentDto dto, CancellationToken ct = default)
     {
         try
         {
-            var updated = await appointmentService.Update(id, dto);
+            var updated = await appointmentService.Update(id, dto, ct);
             return updated is null ? NotFound() : Ok(updated);
         }
         catch (KeyNotFoundException ex)
@@ -75,9 +75,9 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct = default)
     {
-        var deleted = await appointmentService.Delete(id);
+        var deleted = await appointmentService.Delete(id, ct);
         return deleted ? NoContent() : NotFound();
     }
 }

@@ -7,45 +7,49 @@ namespace BeautySaloon_API.Repositories;
 
 public class AppointmentRepository(AppDbContext context) : IAppointmentRepository
 {
-    public async Task<IEnumerable<Appointment>> GetAll() =>
+    public async Task<IEnumerable<Appointment>> GetAll(CancellationToken ct = default) =>
         await context.Appointments
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Service)
-            .ToListAsync();
+            .ToListAsync(ct);
 
-    public async Task<Appointment?> GetById(int id) =>
+    public async Task<Appointment?> GetById(int id, CancellationToken ct = default) =>
         await context.Appointments
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Service)
-            .FirstOrDefaultAsync(a => a.Id == id);
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
 
-    public async Task<IEnumerable<Appointment>> GetByUserId(int userId) =>
+    public async Task<IEnumerable<Appointment>> GetByUserId(int userId, CancellationToken ct = default) =>
         await context.Appointments
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Service)
             .Where(a => a.UserId == userId)
-            .ToListAsync();
+            .ToListAsync(ct);
 
-    public async Task<Appointment> Create(Appointment appointment)
+    public async Task<Appointment> Create(Appointment appointment, CancellationToken ct = default)
     {
         context.Appointments.Add(appointment);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return appointment;
     }
 
-    public async Task<Appointment> Update(Appointment appointment)
+    public async Task<Appointment> Update(Appointment appointment, CancellationToken ct = default)
     {
-        context.Appointments.Update(appointment);
-        await context.SaveChangesAsync();
+        // Use Entry to avoid walking navigation properties loaded via AsNoTracking reads
+        context.Entry(appointment).State = EntityState.Modified;
+        await context.SaveChangesAsync(ct);
         return appointment;
     }
 
-    public async Task<bool> Delete(int id)
+    public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
-        var appointment = await context.Appointments.FindAsync(id);
+        var appointment = await context.Appointments.FindAsync(new object[] { id }, ct);
         if (appointment is null) return false;
         context.Appointments.Remove(appointment);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 }

@@ -9,11 +9,11 @@ namespace BeautySaloon_API.Controllers;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDto dto)
+    public async Task<IActionResult> Register(RegisterDto dto, CancellationToken ct = default)
     {
         try
         {
-            var token = await authService.Register(dto);
+            var token = await authService.Register(dto, ct);
             return Ok(new { token });
         }
         catch (InvalidOperationException ex)
@@ -23,11 +23,11 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    public async Task<IActionResult> Login(LoginDto dto, CancellationToken ct = default)
     {
         try
         {
-            var token = await authService.Login(dto);
+            var token = await authService.Login(dto, ct);
             return Ok(new { token });
         }
         catch (UnauthorizedAccessException ex)

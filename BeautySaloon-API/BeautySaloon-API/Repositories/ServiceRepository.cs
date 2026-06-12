@@ -7,32 +7,32 @@ namespace BeautySaloon_API.Repositories;
 
 public class ServiceRepository(AppDbContext context) : IServiceRepository
 {
-    public async Task<IEnumerable<Service>> GetAll() =>
-        await context.Services.ToListAsync();
+    public async Task<IEnumerable<Service>> GetAll(CancellationToken ct = default) =>
+        await context.Services.AsNoTracking().ToListAsync(ct);
 
-    public async Task<Service?> GetById(int id) =>
-        await context.Services.FindAsync(id);
+    public async Task<Service?> GetById(int id, CancellationToken ct = default) =>
+        await context.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
 
-    public async Task<Service> Create(Service service)
+    public async Task<Service> Create(Service service, CancellationToken ct = default)
     {
         context.Services.Add(service);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return service;
     }
 
-    public async Task<Service> Update(Service service)
+    public async Task<Service> Update(Service service, CancellationToken ct = default)
     {
-        context.Services.Update(service);
-        await context.SaveChangesAsync();
+        context.Entry(service).State = EntityState.Modified;
+        await context.SaveChangesAsync(ct);
         return service;
     }
 
-    public async Task<bool> Delete(int id)
+    public async Task<bool> Delete(int id, CancellationToken ct = default)
     {
-        var service = await context.Services.FindAsync(id);
+        var service = await context.Services.FindAsync(new object[] { id }, ct);
         if (service is null) return false;
         context.Services.Remove(service);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(ct);
         return true;
     }
 }

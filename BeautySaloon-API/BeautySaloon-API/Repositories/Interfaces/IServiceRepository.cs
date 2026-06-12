@@ -4,9 +4,9 @@ namespace BeautySaloon_API.Repositories.Interfaces;
 
 public interface IServiceRepository
 {
-    Task<IEnumerable<Service>> GetAll();
-    Task<Service?> GetById(int id);
-    Task<Service> Create(Service service);
-    Task<Service> Update(Service service);
-    Task<bool> Delete(int id);
+    Task<IEnumerable<Service>> GetAll(CancellationToken ct = default);
+    Task<Service?> GetById(int id, CancellationToken ct = default);
+    Task<Service> Create(Service service, CancellationToken ct = default);
+    Task<Service> Update(Service service, CancellationToken ct = default);
+    Task<bool> Delete(int id, CancellationToken ct = default);
 }
