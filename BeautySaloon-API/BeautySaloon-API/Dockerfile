@@ -7,10 +7,9 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["BeautySaloon-API/BeautySaloon-API.csproj", "BeautySaloon-API/"]
-RUN dotnet restore "BeautySaloon-API/BeautySaloon-API.csproj"
+COPY ["BeautySaloon-API.csproj", "./"]
+RUN dotnet restore "BeautySaloon-API.csproj"
 COPY . .
-WORKDIR "/src/BeautySaloon-API"
 RUN dotnet build "./BeautySaloon-API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
