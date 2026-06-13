@@ -7,9 +7,7 @@ A web-based appointment booking system for a beauty salon, built using **ASP.NET
 ## Live Demo
 
 - **Frontend:** https://beautysaloon-client.onrender.com
-- **Backend API:** https://beautysaloon-api.onrender.com
-- **Swagger UI:** https://beautysaloon-api.onrender.com/swagger
-
+- **Backend API (Swagger):** https://beautysaloon-api.onrender.com/swagger/index.html
 ---
 
 ## Table of Contents
