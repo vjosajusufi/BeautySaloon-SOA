@@ -17,7 +17,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // JWT Authentication
-
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -116,13 +115,19 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Run migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+// Seed database
 await DatabaseSeeder.SeedAsync(app.Services);
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger available in all environments
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseResponseCompression();
 app.UseHttpsRedirection();
